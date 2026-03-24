@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gentle Dissolution — GrievePath Generative Art</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar h1 {
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 14px;
+            margin-bottom: 32px;
+            line-height: 1.4;
+        }
+
+        .control-section { margin-bottom: 32px; }
+
+        .control-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--anthropic-dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '\2022';
+            color: var(--anthropic-orange);
+            font-weight: bold;
+        }
+
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: var(--anthropic-orange);
+            box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
+            background: white;
+        }
+
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .control-group { margin-bottom: 20px; }
+
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: #c86641;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px; height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .color-group { margin-bottom: 16px; }
+
+        .color-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 4px;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker-container input[type="color"] {
+            width: 32px; height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+        }
+
+        .button {
+            background: var(--anthropic-orange);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #c86641;
+            transform: translateY(-1px);
+        }
+
+        .button:active { transform: translateY(0); }
+
+        .button.secondary { background: var(--anthropic-blue); }
+        .button.secondary:hover { background: #5a8bb8; }
+
+        .button.tertiary { background: var(--anthropic-green); }
+        .button.tertiary:hover { background: #6b7b52; }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row .button { flex: 1; }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        #canvas-container {
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(20, 20, 19, 0.1);
+            background: #080a0f;
+        }
+
+        #canvas-container canvas {
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--anthropic-mid-gray);
+            padding: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .canvas-area { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Gentle Dissolution</h1>
+            <div class="subtitle">Grief made visible — presence softening into memory. Particles born from warmth, drifting through fields that breathe.</div>
+
+            <!-- Seed Section (FIXED) -->
+            <div class="control-section">
+                <h3>Seed</h3>
+                <input type="number" id="seed-input" class="seed-input" value="4446" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button secondary" onclick="previousSeed()">&larr; Prev</button>
+                    <button class="button secondary" onclick="nextSeed()">Next &rarr;</button>
+                </div>
+                <button class="button tertiary regen-button" onclick="randomSeedAndUpdate()">&circlearrowleft; Random</button>
+            </div>
+
+            <!-- Parameters Section (VARIABLE) -->
+            <div class="control-section">
+                <h3>Parameters</h3>
+
+                <div class="control-group">
+                    <label>Soul Count</label>
+                    <div class="slider-container">
+                        <input type="range" id="particleCount" min="400" max="4000" step="200" value="1800" oninput="updateParam('particleCount', this.value)">
+                        <span class="value-display" id="particleCount-value">1800</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Breath Depth</label>
+                    <div class="slider-container">
+                        <input type="range" id="breathDepth" min="0.1" max="1.0" step="0.05" value="0.45" oninput="updateParam('breathDepth', this.value)">
+                        <span class="value-display" id="breathDepth-value">0.45</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Drift Speed</label>
+                    <div class="slider-container">
+                        <input type="range" id="driftSpeed" min="0.2" max="2.0" step="0.1" value="0.7" oninput="updateParam('driftSpeed', this.value)">
+                        <span class="value-display" id="driftSpeed-value">0.7</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Field Scale</label>
+                    <div class="slider-container">
+                        <input type="range" id="fieldScale" min="0.001" max="0.012" step="0.001" value="0.004" oninput="updateParam('fieldScale', this.value)">
+                        <span class="value-display" id="fieldScale-value">0.004</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Clustering</label>
+                    <div class="slider-container">
+                        <input type="range" id="clusterStrength" min="0.0" max="0.5" step="0.02" value="0.15" oninput="updateParam('clusterStrength', this.value)">
+                        <span class="value-display" id="clusterStrength-value">0.15</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Fade Memory</label>
+                    <div class="slider-container">
+                        <input type="range" id="fadeMemory" min="2" max="30" step="1" value="12" oninput="updateParam('fadeMemory', this.value)">
+                        <span class="value-display" id="fadeMemory-value">12</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Rebirth Rate</label>
+                    <div class="slider-container">
+                        <input type="range" id="rebirthRate" min="0.001" max="0.02" step="0.001" value="0.006" oninput="updateParam('rebirthRate', this.value)">
+                        <span class="value-display" id="rebirthRate-value">0.006</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colors Section -->
+            <div class="control-section">
+                <h3>Colors</h3>
+
+                <div class="color-group">
+                    <label>Core Warmth (Presence)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#ffd166" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#ffd166</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Tender Guide (Hope)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#00d4aa" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#00d4aa</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Reflection (Distance)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#b088ff" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#b088ff</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Ghost Trail (Memory)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color4" value="#5a6478" onchange="updateColor('color4', this.value)">
+                        <span class="color-value" id="color4-value">#5a6478</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Section (FIXED) -->
+            <div class="control-section">
+                <h3>Actions</h3>
+                <div class="button-row" style="margin-bottom:8px;">
+                    <button class="button" onclick="resetParameters()">Reset</button>
+                    <button class="button secondary" onclick="downloadImage()">Download PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Preparing space...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════
+        // GENTLE DISSOLUTION — Parameters
+        // ═══════════════════════════════════════════════════════════════════
+
+        let params = {
+            seed: 4446,
+            particleCount: 1800,
+            breathDepth: 0.45,
+            driftSpeed: 0.7,
+            fieldScale: 0.004,
+            clusterStrength: 0.15,
+            fadeMemory: 12,
+            rebirthRate: 0.006,
+            colorPalette: ['#ffd166', '#00d4aa', '#b088ff', '#5a6478']
+        };
+
+        let defaultParams = JSON.parse(JSON.stringify(params));
+
+        // ═══════════════════════════════════════════════════════════════════
+        // GENTLE DISSOLUTION — Algorithm
+        // The 4-4-6 breathing cycle of the GrievePath Grief Pause feature
+        // is woven into the noise field's temporal rhythm.
+        // ═══════════════════════════════════════════════════════════════════
+
+        let particles = [];
+        let breathPhase = 0;       // 0..14 seconds total cycle
+        let globalTime = 0;
+        let centerX, centerY;
+        let attractors = [];       // Temporary cluster points
+        let attractorPhase = 0;
+        let pg;                    // Off-screen graphics for trail accumulation
+
+        function setup() {
+            let canvas = createCanvas(1200, 1200);
+            canvas.parent('canvas-container');
+            document.querySelector('.loading').style.display = 'none';
+
+            pg = createGraphics(1200, 1200);
+            pg.background(8, 10, 15);
+
+            initializeSystem();
+        }
+
+        function initializeSystem() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+
+            centerX = width / 2;
+            centerY = height / 2;
+
+            // Create particles born from center
+            particles = [];
+            for (let i = 0; i < params.particleCount; i++) {
+                particles.push(new Soul(true));
+            }
+
+            // Generate attractor seeds — subtle gravity wells
+            attractors = [];
+            for (let i = 0; i < 5; i++) {
+                attractors.push({
+                    x: random(width * 0.2, width * 0.8),
+                    y: random(height * 0.2, height * 0.8),
+                    strength: random(0.3, 1.0),
+                    phase: random(TWO_PI),
+                    freq: random(0.005, 0.015)
+                });
+            }
+
+            // Reset graphics buffer
+            pg.background(8, 10, 15);
+
+            globalTime = 0;
+            breathPhase = 0;
+        }
+
+        function draw() {
+            globalTime += 0.016; // ~60fps timestep
+
+            // ── 4-4-6 Breathing Cycle (14 seconds total) ──
+            let cycleDuration = 14.0;
+            breathPhase = (globalTime % cycleDuration);
+            let breathValue;
+            if (breathPhase < 4.0) {
+                // Inhale (0-4s): ease in, particles draw inward
+                let t = breathPhase / 4.0;
+                breathValue = easeInOutCubic(t);
+            } else if (breathPhase < 8.0) {
+                // Hold (4-8s): particles cluster, stillness
+                breathValue = 1.0;
+            } else {
+                // Exhale (8-14s): ease out, particles release outward
+                let t = (breathPhase - 8.0) / 6.0;
+                breathValue = 1.0 - easeInOutCubic(t);
+            }
+
+            // ── Fade background layer (ghost trail accumulation) ──
+            pg.noStroke();
+            pg.fill(8, 10, 15, params.fadeMemory);
+            pg.rect(0, 0, width, height);
+
+            // ── Update & render particles ──
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update(breathValue);
+                p.display(pg);
+
+                // Rebirth: particles that fade or drift too far
+                if (p.isDead()) {
+                    if (random() < params.rebirthRate * 10) {
+                        particles[i] = new Soul(false);
+                    }
+                }
+            }
+
+            // Ensure particle count stays near target
+            while (particles.length < params.particleCount) {
+                particles.push(new Soul(false));
+            }
+
+            // ── Draw buffer to canvas ──
+            image(pg, 0, 0);
+
+            // ── Subtle center ember glow ──
+            let glowAlpha = map(breathValue, 0, 1, 15, 40);
+            let glowSize = map(breathValue, 0, 1, 120, 200);
+            noStroke();
+            for (let r = glowSize; r > 0; r -= 8) {
+                let a = map(r, 0, glowSize, glowAlpha, 0);
+                let warmCol = hexToRgb(params.colorPalette[0]);
+                fill(warmCol.r, warmCol.g, warmCol.b, a);
+                ellipse(centerX, centerY, r, r);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SOUL — Each particle is a presence dissolving into memory
+        // ═══════════════════════════════════════════════════════════════════
+
+        class Soul {
+            constructor(fromCenter) {
+                if (fromCenter) {
+                    // Initial spawn: scattered from center with some spread
+                    let angle = random(TWO_PI);
+                    let dist = random(0, width * 0.35);
+                    this.pos = createVector(
+                        centerX + cos(angle) * dist,
+                        centerY + sin(angle) * dist
+                    );
+                } else {
+                    // Rebirth: born close to center ember
+                    let angle = random(TWO_PI);
+                    let dist = random(5, 60);
+                    this.pos = createVector(
+                        centerX + cos(angle) * dist,
+                        centerY + sin(angle) * dist
+                    );
+                }
+
+                this.vel = createVector(random(-0.3, 0.3), random(-0.3, 0.3));
+                this.acc = createVector(0, 0);
+                this.life = 1.0;
+                this.decayRate = random(0.0003, 0.0015);
+                this.noiseOffsetX = random(10000);
+                this.noiseOffsetY = random(10000);
+                this.size = random(1.2, 3.5);
+                this.colorPhase = random(1.0); // Where in the color journey this soul starts
+                this.wanderStrength = random(0.5, 1.5);
+                this.personalSpeed = random(0.6, 1.4);
+            }
+
+            update(breathValue) {
+                this.acc.mult(0);
+
+                // ── Flow field force (layered Perlin noise) ──
+                let ns = params.fieldScale;
+                let n1 = noise(
+                    this.pos.x * ns + this.noiseOffsetX,
+                    this.pos.y * ns + this.noiseOffsetY,
+                    globalTime * 0.03
+                );
+                let n2 = noise(
+                    this.pos.x * ns * 2.5 + 500,
+                    this.pos.y * ns * 2.5 + 500,
+                    globalTime * 0.015
+                );
+                let angle = (n1 * 4.0 + n2 * 2.0) * TWO_PI;
+
+                let flowForce = p5.Vector.fromAngle(angle);
+                flowForce.mult(params.driftSpeed * this.personalSpeed * 0.4);
+                this.acc.add(flowForce);
+
+                // ── Breathing modulation ──
+                // During inhale/hold: gentle pull toward center
+                // During exhale: gentle push outward
+                let toCenter = createVector(centerX - this.pos.x, centerY - this.pos.y);
+                let distFromCenter = toCenter.mag();
+                toCenter.normalize();
+
+                let breathForce = toCenter.copy();
+                let inwardStrength = map(breathValue, 0, 1, -0.02, 0.06) * params.breathDepth;
+                breathForce.mult(inwardStrength);
+
+                // Stronger pull when closer (soft gravity), weaker when far
+                let distFactor = map(constrain(distFromCenter, 0, width * 0.5), 0, width * 0.5, 0.3, 1.2);
+                if (breathValue > 0.5) {
+                    breathForce.mult(1.0 / distFactor); // Inhale pulls distant ones more
+                } else {
+                    breathForce.mult(distFactor); // Exhale pushes nearby ones more
+                }
+
+                this.acc.add(breathForce);
+
+                // ── Attractor clustering ──
+                let clusterStr = params.clusterStrength * (0.5 + 0.5 * breathValue);
+                for (let att of attractors) {
+                    let attActive = sin(globalTime * att.freq * TWO_PI + att.phase);
+                    if (attActive > 0.2) {
+                        let toAtt = createVector(att.x - this.pos.x, att.y - this.pos.y);
+                        let d = toAtt.mag();
+                        if (d > 10 && d < 200) {
+                            toAtt.normalize();
+                            let force = clusterStr * att.strength * attActive * (1.0 / (d * 0.05 + 1));
+                            toAtt.mult(force);
+                            this.acc.add(toAtt);
+                        }
+                    }
+                }
+
+                // ── Gentle organic wobble ──
+                let wobbleAngle = noise(
+                    this.noiseOffsetX + globalTime * 0.5,
+                    this.noiseOffsetY + globalTime * 0.5
+                ) * TWO_PI * 2;
+                let wobble = p5.Vector.fromAngle(wobbleAngle);
+                wobble.mult(0.08 * this.wanderStrength);
+                this.acc.add(wobble);
+
+                // ── Physics integration ──
+                this.vel.add(this.acc);
+                this.vel.limit(params.driftSpeed * this.personalSpeed * 1.5);
+                this.vel.mult(0.97); // gentle damping
+                this.pos.add(this.vel);
+
+                // ── Life decay (faster when far from center) ──
+                let distDecay = map(distFromCenter, 0, width * 0.5, 0.6, 1.8);
+                this.life -= this.decayRate * distDecay;
+
+                // Update color phase based on distance from center
+                this.colorPhase = constrain(
+                    map(distFromCenter, 0, width * 0.45, 0, 1),
+                    0, 1
+                );
+            }
+
+            display(g) {
+                if (this.life <= 0) return;
+
+                // ── Color journey: warm gold → teal → purple → ghost ──
+                let col = this.getColor();
+                let alpha = this.life * map(this.colorPhase, 0.8, 1.0, 255, 40);
+                alpha = constrain(alpha, 0, 255);
+
+                g.noStroke();
+                g.fill(col.r, col.g, col.b, alpha);
+
+                let sz = this.size * map(this.life, 0, 1, 0.4, 1.0);
+
+                // Slight elongation along velocity for a trailing feel
+                let speed = this.vel.mag();
+                if (speed > 0.3) {
+                    g.push();
+                    g.translate(this.pos.x, this.pos.y);
+                    g.rotate(this.vel.heading());
+                    let elongation = map(speed, 0.3, 3, 1, 2.5);
+                    g.ellipse(0, 0, sz * elongation, sz);
+                    g.pop();
+                } else {
+                    g.ellipse(this.pos.x, this.pos.y, sz, sz);
+                }
+            }
+
+            getColor() {
+                let t = this.colorPhase;
+                let c1 = hexToRgb(params.colorPalette[0]); // warm gold
+                let c2 = hexToRgb(params.colorPalette[1]); // teal hope
+                let c3 = hexToRgb(params.colorPalette[2]); // purple reflection
+                let c4 = hexToRgb(params.colorPalette[3]); // ghost gray
+
+                if (t < 0.33) {
+                    let lt = t / 0.33;
+                    return lerpColor3(c1, c2, lt);
+                } else if (t < 0.66) {
+                    let lt = (t - 0.33) / 0.33;
+                    return lerpColor3(c2, c3, lt);
+                } else {
+                    let lt = (t - 0.66) / 0.34;
+                    return lerpColor3(c3, c4, lt);
+                }
+            }
+
+            isDead() {
+                if (this.life <= 0) return true;
+                if (this.pos.x < -50 || this.pos.x > width + 50) return true;
+                if (this.pos.y < -50 || this.pos.y > height + 50) return true;
+                return false;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // UTILITY FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════════
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 200, g: 200, b: 200 };
+        }
+
+        function lerpColor3(c1, c2, t) {
+            return {
+                r: c1.r + (c2.r - c1.r) * t,
+                g: c1.g + (c2.g - c1.g) * t,
+                b: c1.b + (c2.b - c1.b) * t
+            };
+        }
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // UI CONTROL HANDLERS
+        // ═══════════════════════════════════════════════════════════════════
+
+        function updateParam(paramName, value) {
+            params[paramName] = parseFloat(value);
+            document.getElementById(paramName + '-value').textContent = value;
+
+            // Some params need full re-init
+            if (paramName === 'particleCount') {
+                initializeSystem();
+            }
+        }
+
+        function updateColor(colorId, value) {
+            let index = parseInt(colorId.replace('color', '')) - 1;
+            params.colorPalette[index] = value;
+            document.getElementById(colorId + '-value').textContent = value;
+        }
+
+        function downloadImage() {
+            saveCanvas('gentle-dissolution-' + params.seed, 'png');
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SEED CONTROL FUNCTIONS (FIXED)
+        // ═══════════════════════════════════════════════════════════════════
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateSeed() {
+            let input = document.getElementById('seed-input');
+            let newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                initializeSystem();
+            } else {
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+
+            document.getElementById('particleCount').value = params.particleCount;
+            document.getElementById('particleCount-value').textContent = params.particleCount;
+            document.getElementById('breathDepth').value = params.breathDepth;
+            document.getElementById('breathDepth-value').textContent = params.breathDepth;
+            document.getElementById('driftSpeed').value = params.driftSpeed;
+            document.getElementById('driftSpeed-value').textContent = params.driftSpeed;
+            document.getElementById('fieldScale').value = params.fieldScale;
+            document.getElementById('fieldScale-value').textContent = params.fieldScale;
+            document.getElementById('clusterStrength').value = params.clusterStrength;
+            document.getElementById('clusterStrength-value').textContent = params.clusterStrength;
+            document.getElementById('fadeMemory').value = params.fadeMemory;
+            document.getElementById('fadeMemory-value').textContent = params.fadeMemory;
+            document.getElementById('rebirthRate').value = params.rebirthRate;
+            document.getElementById('rebirthRate-value').textContent = params.rebirthRate;
+
+            document.getElementById('color1').value = params.colorPalette[0];
+            document.getElementById('color1-value').textContent = params.colorPalette[0];
+            document.getElementById('color2').value = params.colorPalette[1];
+            document.getElementById('color2-value').textContent = params.colorPalette[1];
+            document.getElementById('color3').value = params.colorPalette[2];
+            document.getElementById('color3-value').textContent = params.colorPalette[2];
+            document.getElementById('color4').value = params.colorPalette[3];
+            document.getElementById('color4-value').textContent = params.colorPalette[3];
+
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        window.addEventListener('load', function() {
+            updateSeedDisplay();
+        });
+    </script>
+</body>
+</html>

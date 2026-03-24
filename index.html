@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrievePath — Gentle Guidance Through Loss</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d4aa;
+            --primary-glow: rgba(0, 212, 170, 0.15);
+            --primary-soft: rgba(0, 212, 170, 0.08);
+            --secondary: #ffd166;
+            --secondary-glow: rgba(255, 209, 102, 0.12);
+            --error: #e8440a;
+            --info: #4f9fff;
+            --purple: #b088ff;
+            --bg: #080a0f;
+            --surface1: #0f1219;
+            --surface2: #151a24;
+            --surface3: #1c2330;
+            --border: #222b3a;
+            --text: #dce2ee;
+            --muted: #5a6478;
+            --radius-card: 16px;
+            --radius-button: 12px;
+            --radius-chip: 8px;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            overflow-x: hidden;
+        }
+
+        .serif { font-family: 'Playfair Display', Georgia, serif; }
+        .text-primary { color: var(--primary); }
+
+        /* ─── p5.js Canvas Layer ─── */
+        #p5-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #p5-bg canvas { display: block; width: 100% !important; height: 100% !important; }
+
+        /* ─── Content Layer ─── */
+        .content-layer {
+            position: relative;
+            z-index: 1;
+        }
+
+        .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+        /* ─── Navigation ─── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(8, 10, 15, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(34, 43, 58, 0.4);
+            transition: background 0.3s;
+        }
+        nav .container {
+            display: flex; align-items: center; justify-content: space-between;
+            height: 72px;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 12px;
+            text-decoration: none; color: var(--text);
+        }
+        .nav-logo-icon {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, var(--primary), rgba(0,212,170,0.6));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .nav-logo-text { font-weight: 600; font-size: 1.15rem; letter-spacing: -0.02em; }
+        .nav-links { display: flex; align-items: center; gap: 32px; }
+        .nav-links a {
+            color: var(--muted); text-decoration: none;
+            font-size: 0.9rem; font-weight: 500; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text); }
+        .nav-cta {
+            background: var(--primary) !important; color: var(--bg) !important;
+            padding: 10px 22px !important; border-radius: var(--radius-button) !important;
+            font-weight: 600 !important; font-size: 0.88rem !important; transition: all 0.2s !important;
+        }
+        .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--primary-glow); }
+        .mobile-menu-btn {
+            display: none; background: none; border: none;
+            color: var(--text); font-size: 1.5rem; cursor: pointer;
+        }
+
+        /* ─── Hero ─── */
+        .hero {
+            min-height: 100vh;
+            display: flex; align-items: center;
+            padding-top: 72px;
+        }
+        .hero-content {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 64px; align-items: center;
+        }
+        .hero-text { max-width: 560px; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(0,212,170,0.06);
+            border: 1px solid rgba(0,212,170,0.12);
+            border-radius: 100px; padding: 6px 16px;
+            font-size: 0.8rem; font-weight: 500; color: var(--primary);
+            margin-bottom: 28px;
+        }
+        .hero-badge-dot {
+            width: 6px; height: 6px; background: var(--primary);
+            border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+        .hero h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(2.4rem, 5vw, 3.6rem);
+            font-weight: 500; line-height: 1.15; letter-spacing: -0.02em;
+            margin-bottom: 24px;
+        }
+        .hero h1 em { font-style: italic; color: var(--primary); }
+        .hero-subtitle {
+            font-size: 1.1rem; color: var(--muted); line-height: 1.7;
+            margin-bottom: 40px; max-width: 480px;
+        }
+        .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--primary); color: var(--bg);
+            padding: 16px 32px; border-radius: var(--radius-button);
+            font-weight: 600; font-size: 1rem; text-decoration: none;
+            transition: all 0.25s; border: none; cursor: pointer;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--primary-glow); }
+
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: transparent; color: var(--text);
+            padding: 16px 28px; border-radius: var(--radius-button);
+            font-weight: 500; font-size: 1rem; text-decoration: none;
+            transition: all 0.25s; border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--muted); background: rgba(15,18,25,0.6); }
+
+        .hero-trust {
+            display: flex; align-items: center; gap: 16px;
+            margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);
+        }
+        .hero-trust-stars { color: var(--secondary); font-size: 0.95rem; letter-spacing: 2px; }
+        .hero-trust-text { font-size: 0.82rem; color: var(--muted); }
+
+        /* ─── Phone Mockup ─── */
+        .hero-visual { display: flex; justify-content: center; align-items: center; position: relative; }
+        .phone-mockup {
+            width: 280px; height: 570px;
+            background: var(--surface1);
+            border-radius: 40px; border: 2px solid var(--border);
+            padding: 12px; position: relative;
+            box-shadow: 0 0 0 1px rgba(0,212,170,0.05), 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .phone-screen {
+            width: 100%; height: 100%;
+            background: var(--bg); border-radius: 30px;
+            overflow: hidden; display: flex; flex-direction: column;
+        }
+        .phone-notch {
+            width: 120px; height: 28px; background: var(--surface1);
+            border-radius: 0 0 16px 16px; margin: 0 auto;
+        }
+        .phone-content { padding: 16px; flex: 1; }
+        .phone-greeting { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; }
+        .phone-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; }
+        .phone-progress-ring { width: 90px; height: 90px; margin: 0 auto 16px; position: relative; }
+        .phone-progress-ring svg { width: 100%; height: 100%; }
+        .phone-progress-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;
+        }
+        .phone-progress-text .pct { font-size: 1.1rem; font-weight: 700; display: block; }
+        .phone-progress-text .label { font-size: 0.55rem; color: var(--muted); }
+        .phone-task {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px; background: var(--surface2);
+            border-radius: 10px; margin-bottom: 8px; font-size: 0.72rem;
+        }
+        .phone-task-check {
+            width: 18px; height: 18px; border-radius: 50%;
+            border: 1.5px solid var(--border); flex-shrink: 0;
+        }
+        .phone-task-check.done {
+            background: var(--primary); border-color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--bg); font-size: 0.6rem;
+        }
+        .phone-task-priority { width: 4px; height: 20px; border-radius: 2px; flex-shrink: 0; }
+        .phone-tab-bar {
+            display: flex; justify-content: space-around;
+            padding: 8px 0 4px; border-top: 1px solid var(--border);
+        }
+        .phone-tab {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            font-size: 0.55rem; color: var(--muted);
+        }
+        .phone-tab.active { color: var(--primary); }
+        .phone-tab-icon { font-size: 1rem; }
+
+        /* ─── Transition Quote ─── */
+        .transition-section { text-align: center; padding: 100px 0 80px; }
+        .transition-line {
+            width: 1px; height: 80px;
+            background: linear-gradient(to bottom, transparent, var(--primary), transparent);
+            margin: 0 auto 40px;
+        }
+        .transition-section h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            font-weight: 400; font-style: italic;
+            color: var(--text); opacity: 0.85;
+            max-width: 600px; margin: 0 auto; line-height: 1.5;
+        }
+
+        /* ─── Section Styles ─── */
+        .section-label {
+            display: inline-block; font-size: 0.75rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.15em;
+            color: var(--primary); margin-bottom: 16px;
+        }
+        .section-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+            font-weight: 500; line-height: 1.2; margin-bottom: 16px;
+        }
+        .section-subtitle {
+            font-size: 1.05rem; color: var(--muted);
+            max-width: 540px; margin-bottom: 56px;
+        }
+
+        /* ─── Features ─── */
+        .features { padding: 80px 0 100px; }
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .feature-card {
+            background: rgba(15, 18, 25, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: 32px 28px;
+            transition: all 0.3s ease; position: relative; overflow: hidden;
+        }
+        .feature-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .feature-card:hover {
+            border-color: rgba(0,212,170,0.2); transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; margin-bottom: 20px;
+        }
+        .feature-icon.teal { background: var(--primary-soft); color: var(--primary); }
+        .feature-icon.gold { background: var(--secondary-glow); color: var(--secondary); }
+        .feature-icon.blue { background: rgba(79,159,255,0.1); color: var(--info); }
+        .feature-icon.purple { background: rgba(176,136,255,0.1); color: var(--purple); }
+        .feature-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
+        .feature-card p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+
+        /* ─── How It Works ─── */
+        .how-it-works { padding: 100px 0; }
+        .how-it-works .section-title,
+        .how-it-works .section-label,
+        .how-it-works .section-subtitle { text-align: center; margin-left: auto; margin-right: auto; }
+        .steps {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 32px; margin-top: 48px; position: relative;
+        }
+        .steps::before {
+            content: ''; position: absolute; top: 36px; left: 12%; right: 12%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), var(--border), transparent);
+        }
+        .step { text-align: center; position: relative; }
+        .step-number {
+            width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: 700; margin: 0 auto 20px;
+            position: relative; z-index: 2;
+        }
+        .step:nth-child(1) .step-number { background: var(--primary-soft); color: var(--primary); border: 2px solid rgba(0,212,170,0.2); }
+        .step:nth-child(2) .step-number { background: var(--secondary-glow); color: var(--secondary); border: 2px solid rgba(255,209,102,0.2); }
+        .step:nth-child(3) .step-number { background: rgba(79,159,255,0.1); color: var(--info); border: 2px solid rgba(79,159,255,0.15); }
+        .step:nth-child(4) .step-number { background: rgba(176,136,255,0.1); color: var(--purple); border: 2px solid rgba(176,136,255,0.15); }
+        .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+        .step p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+        /* ─── Grief Pause ─── */
+        .pause-section { padding: 100px 0; }
+        .pause-content { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+        .pause-visual { display: flex; justify-content: center; align-items: center; }
+        .breathing-circle-container { position: relative; width: 280px; height: 280px; }
+        .breathing-circle {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); border-radius: 50%;
+            animation: breathe 14s ease-in-out infinite;
+        }
+        .breathing-circle.outer {
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(0,212,170,0.06), transparent);
+            border: 1px solid rgba(0,212,170,0.08);
+        }
+        .breathing-circle.middle {
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(0,212,170,0.1), transparent);
+            border: 1px solid rgba(0,212,170,0.12);
+            animation-delay: -0.5s;
+        }
+        .breathing-circle.inner {
+            width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(0,212,170,0.2), rgba(0,212,170,0.05));
+            animation-delay: -1s;
+        }
+        .breathing-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); text-align: center; z-index: 2;
+        }
+        .breathing-text .inhale { font-size: 0.95rem; font-weight: 500; color: var(--primary); }
+        @keyframes breathe {
+            0%,100%{transform:translate(-50%,-50%) scale(0.85);opacity:0.6}
+            28%{transform:translate(-50%,-50%) scale(1);opacity:1}
+            57%{transform:translate(-50%,-50%) scale(1);opacity:1}
+            100%{transform:translate(-50%,-50%) scale(0.85);opacity:0.6}
+        }
+        .pause-text h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            font-weight: 500; margin-bottom: 20px; line-height: 1.3;
+        }
+        .pause-text p { color: var(--muted); font-size: 1rem; line-height: 1.7; margin-bottom: 16px; }
+        .pause-features { list-style: none; margin-top: 24px; }
+        .pause-features li {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 8px 0; font-size: 0.92rem; color: var(--text);
+        }
+        .pause-features li .check { color: var(--primary); font-size: 1rem; margin-top: 2px; }
+
+        /* ─── Testimonials ─── */
+        .testimonials { padding: 100px 0; }
+        .testimonials .section-title,
+        .testimonials .section-label,
+        .testimonials .section-subtitle { text-align: center; margin-left: auto; margin-right: auto; }
+        .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+        .testimonial-card {
+            background: rgba(15, 18, 25, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card); padding: 32px;
+        }
+        .testimonial-quote {
+            font-size: 2rem; color: var(--primary); opacity: 0.3;
+            margin-bottom: 12px; font-family: 'Playfair Display', serif;
+        }
+        .testimonial-card p {
+            font-size: 0.92rem; line-height: 1.7; color: var(--text);
+            opacity: 0.9; margin-bottom: 20px; font-style: italic;
+        }
+        .testimonial-author { display: flex; align-items: center; gap: 12px; }
+        .testimonial-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 0.85rem;
+        }
+        .testimonial-avatar.t1 { background: var(--primary-soft); color: var(--primary); }
+        .testimonial-avatar.t2 { background: var(--secondary-glow); color: var(--secondary); }
+        .testimonial-avatar.t3 { background: rgba(176,136,255,0.1); color: var(--purple); }
+        .testimonial-name { font-size: 0.85rem; font-weight: 600; }
+        .testimonial-context { font-size: 0.75rem; color: var(--muted); }
+
+        /* ─── Pricing ─── */
+        .pricing { padding: 100px 0; }
+        .pricing .section-title,
+        .pricing .section-label,
+        .pricing .section-subtitle { text-align: center; margin-left: auto; margin-right: auto; }
+        .pricing-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 24px; max-width: 780px; margin: 48px auto 0;
+        }
+        .pricing-card {
+            background: rgba(15, 18, 25, 0.75);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: 40px 32px; text-align: center; position: relative;
+            transition: all 0.3s;
+        }
+        .pricing-card.featured {
+            border-color: rgba(0,212,170,0.3);
+            background: linear-gradient(180deg, rgba(0,212,170,0.04), rgba(15,18,25,0.75));
+        }
+        .pricing-card.featured::before {
+            content: 'Most Popular'; position: absolute; top: -12px; left: 50%;
+            transform: translateX(-50%); background: var(--primary); color: var(--bg);
+            font-size: 0.72rem; font-weight: 700; padding: 4px 16px;
+            border-radius: 100px; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .pricing-tier {
+            font-size: 0.85rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px;
+        }
+        .pricing-price { font-size: 2.4rem; font-weight: 700; margin-bottom: 4px; }
+        .pricing-period { font-size: 0.82rem; color: var(--muted); margin-bottom: 28px; }
+        .pricing-divider { width: 100%; height: 1px; background: var(--border); margin-bottom: 24px; }
+        .pricing-features { list-style: none; text-align: left; margin-bottom: 32px; }
+        .pricing-features li {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 6px 0; font-size: 0.88rem; color: var(--text);
+        }
+        .pricing-features li .icon { color: var(--primary); font-size: 0.9rem; margin-top: 3px; }
+        .pricing-features li.disabled { color: var(--muted); }
+        .pricing-features li.disabled .icon { color: var(--muted); }
+        .pricing-btn {
+            display: block; width: 100%; padding: 14px;
+            border-radius: var(--radius-button); font-weight: 600; font-size: 0.95rem;
+            text-decoration: none; text-align: center; transition: all 0.2s;
+            cursor: pointer; border: none;
+        }
+        .pricing-btn.primary { background: var(--primary); color: var(--bg); }
+        .pricing-btn.primary:hover { box-shadow: 0 4px 20px var(--primary-glow); transform: translateY(-1px); }
+        .pricing-btn.outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .pricing-btn.outline:hover { border-color: var(--muted); background: rgba(21,26,36,0.6); }
+
+        /* ─── Final CTA ─── */
+        .final-cta { padding: 100px 0 80px; text-align: center; }
+        .final-cta-card {
+            background: linear-gradient(180deg, rgba(15,18,25,0.8), rgba(21,26,36,0.8));
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px; padding: 72px 48px;
+            position: relative; overflow: hidden;
+        }
+        .final-cta-card::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            transform: translateX(-50%); width: 200px; height: 200px;
+            background: radial-gradient(circle, var(--primary-glow), transparent);
+            filter: blur(60px);
+        }
+        .final-cta h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+            font-weight: 500; margin-bottom: 16px; position: relative;
+        }
+        .final-cta p {
+            font-size: 1.05rem; color: var(--muted);
+            max-width: 480px; margin: 0 auto 36px; position: relative;
+        }
+        .final-cta .btn-primary { position: relative; }
+
+        /* ─── Footer ─── */
+        footer { border-top: 1px solid var(--border); padding: 48px 0 36px; }
+        .footer-content {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 48px; flex-wrap: wrap;
+        }
+        .footer-brand p {
+            font-size: 0.85rem; color: var(--muted);
+            max-width: 280px; margin-top: 12px; line-height: 1.6;
+        }
+        .footer-links h4 {
+            font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted); margin-bottom: 16px;
+        }
+        .footer-links a {
+            display: block; font-size: 0.88rem; color: var(--text);
+            opacity: 0.7; text-decoration: none; padding: 4px 0; transition: opacity 0.2s;
+        }
+        .footer-links a:hover { opacity: 1; }
+        .footer-bottom {
+            margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.8rem; color: var(--muted);
+        }
+
+        /* ─── Scroll Animations ─── */
+        .fade-up {
+            opacity: 0; transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .hero-content { grid-template-columns: 1fr; text-align: center; gap: 48px; }
+            .hero-text { max-width: 100%; }
+            .hero-subtitle { margin-left: auto; margin-right: auto; }
+            .hero-actions { justify-content: center; }
+            .hero-trust { justify-content: center; }
+            .hero-visual { order: -1; }
+            .phone-mockup { width: 240px; height: 490px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .steps { grid-template-columns: repeat(2, 1fr); }
+            .steps::before { display: none; }
+            .pause-content { grid-template-columns: 1fr; text-align: center; }
+            .pause-features { display: inline-block; text-align: left; }
+            .testimonials-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .footer-content { flex-direction: column; align-items: center; text-align: center; }
+            .footer-brand p { margin-left: auto; margin-right: auto; }
+            .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- p5.js Background Canvas -->
+    <div id="p5-bg"></div>
+
+    <!-- All Site Content -->
+    <div class="content-layer">
+
+        <!-- Navigation -->
+        <nav>
+            <div class="container">
+                <a href="#" class="nav-logo">
+                    <div class="nav-logo-icon">&#x1F54A;&#xFE0F;</div>
+                    <span class="nav-logo-text">GrievePath</span>
+                </a>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#how-it-works">How It Works</a>
+                    <a href="#pause">Grief Pause</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#download" class="nav-cta">Download Free</a>
+                </div>
+                <button class="mobile-menu-btn" aria-label="Menu">&#9776;</button>
+            </div>
+        </nav>
+
+        <!-- Hero -->
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <div class="hero-badge">
+                            <span class="hero-badge-dot"></span>
+                            Available on iOS
+                        </div>
+                        <h1>Gentle guidance<br>through life's<br>hardest <em>chapter</em></h1>
+                        <p class="hero-subtitle">
+                            When someone you love passes, the world doesn't pause — but you can.
+                            GrievePath walks beside you with personalized checklists, deadline
+                            reminders, and moments to simply breathe.
+                        </p>
+                        <div class="hero-actions">
+                            <a href="#download" class="btn-primary">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Download for Free
+                            </a>
+                            <a href="#features" class="btn-secondary">Learn More</a>
+                        </div>
+                        <div class="hero-trust">
+                            <span class="hero-trust-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                            <span class="hero-trust-text">Designed with grief counselors &amp; estate attorneys</span>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="phone-notch"></div>
+                                <div class="phone-content">
+                                    <div class="phone-greeting">Good evening</div>
+                                    <div class="phone-title">Your Progress</div>
+                                    <div class="phone-progress-ring">
+                                        <svg viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="42" fill="none" stroke="#1c2330" stroke-width="8"/>
+                                            <circle cx="50" cy="50" r="42" fill="none" stroke="#00d4aa" stroke-width="8" stroke-linecap="round" stroke-dasharray="165 264" transform="rotate(-90 50 50)"/>
+                                        </svg>
+                                        <div class="phone-progress-text">
+                                            <span class="pct" style="color:#dce2ee">62%</span>
+                                            <span class="label">Complete</span>
+                                        </div>
+                                    </div>
+                                    <div style="font-size:0.72rem;color:#ffd166;font-weight:600;margin-bottom:8px;">Urgent This Week</div>
+                                    <div class="phone-task">
+                                        <div class="phone-task-priority" style="background:#e8440a"></div>
+                                        <div class="phone-task-check"></div>
+                                        <span>File death certificate copies</span>
+                                    </div>
+                                    <div class="phone-task">
+                                        <div class="phone-task-priority" style="background:#ffd166"></div>
+                                        <div class="phone-task-check"></div>
+                                        <span>Notify Social Security</span>
+                                    </div>
+                                    <div class="phone-task">
+                                        <div class="phone-task-priority" style="background:#4f9fff"></div>
+                                        <div class="phone-task-check done">&#10003;</div>
+                                        <span style="text-decoration:line-through;opacity:0.5">Contact life insurance</span>
+                                    </div>
+                                    <div class="phone-task">
+                                        <div class="phone-task-priority" style="background:#ffd166"></div>
+                                        <div class="phone-task-check"></div>
+                                        <span>Freeze credit accounts</span>
+                                    </div>
+                                </div>
+                                <div class="phone-tab-bar">
+                                    <div class="phone-tab active"><span class="phone-tab-icon">&#8962;</span>Home</div>
+                                    <div class="phone-tab"><span class="phone-tab-icon">&#9745;</span>Tasks</div>
+                                    <div class="phone-tab"><span class="phone-tab-icon">&#128196;</span>Scan</div>
+                                    <div class="phone-tab"><span class="phone-tab-icon">&#9829;</span>Pause</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transition Quote -->
+        <section class="transition-section">
+            <div class="container">
+                <div class="transition-line"></div>
+                <h2 class="fade-up">
+                    "After my mother passed, I had no idea there were over 60 things
+                    that needed to be done. GrievePath saved me."
+                </h2>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="features" id="features">
+            <div class="container">
+                <span class="section-label fade-up">Features</span>
+                <h2 class="section-title fade-up">Everything you need,<br>nothing you don't</h2>
+                <p class="section-subtitle fade-up">Built for clarity in chaos. Every feature exists to lift one more weight off your shoulders.</p>
+                <div class="features-grid">
+                    <div class="feature-card fade-up">
+                        <div class="feature-icon teal">&#9745;</div>
+                        <h3>Smart Task Checklist</h3>
+                        <p>Over 60 tasks across financial, legal, government, personal, digital, and household categories — prioritized by urgency and personalized to your situation.</p>
+                    </div>
+                    <div class="feature-card fade-up">
+                        <div class="feature-icon gold">&#9200;</div>
+                        <h3>Deadline Reminders</h3>
+                        <p>Important deadlines are calculated from the date of passing. Gentle notifications ensure nothing time-sensitive slips through when your mind is elsewhere.</p>
+                    </div>
+                    <div class="feature-card fade-up">
+                        <div class="feature-icon blue">&#128196;</div>
+                        <h3>Document Scanner</h3>
+                        <p>Scan and store death certificates, insurance policies, wills, and legal forms directly in the app. Everything organized and accessible when you need it.</p>
+                    </div>
+                    <div class="feature-card fade-up">
+                        <div class="feature-icon purple">&#128106;</div>
+                        <h3>Family Portal</h3>
+                        <p>Delegate tasks to family members so the burden doesn't fall on one person. Everyone sees what's done and what still needs attention.</p>
+                    </div>
+                    <div class="feature-card fade-up">
+                        <div class="feature-icon teal">&#9829;</div>
+                        <h3>Grief Pause</h3>
+                        <p>A built-in emotional check-in with guided breathing exercises. Because sometimes the most important task is taking care of yourself.</p>
+                    </div>
+                    <div class="feature-card fade-up">
+                        <div class="feature-icon gold">&#9881;</div>
+                        <h3>AI Prioritization</h3>
+                        <p>Intelligent task ordering that adapts to your state, relationship, and jurisdiction — so the most critical items always surface first.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="how-it-works" id="how-it-works">
+            <div class="container">
+                <span class="section-label fade-up">How It Works</span>
+                <h2 class="section-title fade-up">Four simple steps.<br>One less worry.</h2>
+                <p class="section-subtitle fade-up">We guide you gently. No overwhelm, no judgment — just clarity.</p>
+                <div class="steps">
+                    <div class="step fade-up">
+                        <div class="step-number">1</div>
+                        <h3>Tell Us Your Situation</h3>
+                        <p>A brief, compassionate onboarding asks about your relationship, location, and circumstances to personalize your path.</p>
+                    </div>
+                    <div class="step fade-up">
+                        <div class="step-number">2</div>
+                        <h3>Get Your Checklist</h3>
+                        <p>Receive a prioritized, deadline-aware task list covering everything from filing the death certificate to closing accounts.</p>
+                    </div>
+                    <div class="step fade-up">
+                        <div class="step-number">3</div>
+                        <h3>Work at Your Pace</h3>
+                        <p>Complete tasks when you're ready. Scan documents, delegate to family, and take Grief Pauses whenever you need.</p>
+                    </div>
+                    <div class="step fade-up">
+                        <div class="step-number">4</div>
+                        <h3>Find Peace of Mind</h3>
+                        <p>Watch your progress grow as each task is completed, knowing nothing important will be forgotten.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grief Pause -->
+        <section class="pause-section" id="pause">
+            <div class="container">
+                <div class="pause-content">
+                    <div class="pause-visual fade-up">
+                        <div class="breathing-circle-container">
+                            <div class="breathing-circle outer"></div>
+                            <div class="breathing-circle middle"></div>
+                            <div class="breathing-circle inner"></div>
+                            <div class="breathing-text">
+                                <div class="inhale" id="breathingLabel">Breathe In</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pause-text fade-up">
+                        <span class="section-label">Grief Pause</span>
+                        <h2>It's okay to stop<br>and just <em class="serif text-primary">breathe</em></h2>
+                        <p>Grief isn't just a to-do list. GrievePath includes a dedicated emotional wellness space with guided breathing exercises and a feelings journal — because healing matters as much as paperwork.</p>
+                        <ul class="pause-features">
+                            <li><span class="check">&#10003;</span> 8 emotion categories to track how you're feeling</li>
+                            <li><span class="check">&#10003;</span> Guided 4-4-6 breathing exercises</li>
+                            <li><span class="check">&#10003;</span> Intensity tracking over time</li>
+                            <li><span class="check">&#10003;</span> Private journal for your thoughts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="testimonials" id="testimonials">
+            <div class="container">
+                <span class="section-label fade-up">Stories</span>
+                <h2 class="section-title fade-up">You're not walking<br>this path alone</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card fade-up">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>When my husband passed suddenly, I was drowning in paperwork I didn't even know existed. GrievePath broke everything into manageable steps. I don't know what I would have done without it.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar t1">SR</div>
+                            <div><div class="testimonial-name">Sarah R.</div><div class="testimonial-context">Lost her spouse</div></div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card fade-up">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>The Grief Pause feature caught me off guard — in the best way. I was pushing through tasks nonstop and the breathing exercise was exactly what I needed. It felt like someone giving me permission to feel.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar t2">MJ</div>
+                            <div><div class="testimonial-name">Michael J.</div><div class="testimonial-context">Lost his mother</div></div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card fade-up">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>Being able to share tasks with my siblings through the Family Portal meant we didn't have to have difficult conversations about "who's doing what." The app handled it gracefully for us.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar t3">AL</div>
+                            <div><div class="testimonial-name">Amanda L.</div><div class="testimonial-context">Lost her father</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section class="pricing" id="pricing">
+            <div class="container">
+                <span class="section-label fade-up">Pricing</span>
+                <h2 class="section-title fade-up">Start free. Upgrade<br>when you're ready.</h2>
+                <p class="section-subtitle fade-up">Core features are always free. Premium unlocks the full checklist and tools when you need more.</p>
+                <div class="pricing-grid">
+                    <div class="pricing-card fade-up">
+                        <div class="pricing-tier">Free</div>
+                        <div class="pricing-price">$0</div>
+                        <div class="pricing-period">Forever</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><span class="icon">&#10003;</span> Core task checklist</li>
+                            <li><span class="icon">&#10003;</span> Deadline reminders</li>
+                            <li><span class="icon">&#10003;</span> Grief Pause &amp; breathing</li>
+                            <li><span class="icon">&#10003;</span> Document scanner (5 docs)</li>
+                            <li class="disabled"><span class="icon">&#8212;</span> Full 60+ task library</li>
+                            <li class="disabled"><span class="icon">&#8212;</span> Family Portal</li>
+                            <li class="disabled"><span class="icon">&#8212;</span> Legal document templates</li>
+                        </ul>
+                        <a href="#download" class="pricing-btn outline">Get Started Free</a>
+                    </div>
+                    <div class="pricing-card featured fade-up">
+                        <div class="pricing-tier">Pro</div>
+                        <div class="pricing-price" style="color:var(--primary)">$9.99</div>
+                        <div class="pricing-period">One-time purchase &middot; Lifetime access</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><span class="icon">&#10003;</span> Everything in Free</li>
+                            <li><span class="icon">&#10003;</span> Full 60+ task library</li>
+                            <li><span class="icon">&#10003;</span> Family Portal &amp; delegation</li>
+                            <li><span class="icon">&#10003;</span> Legal document templates</li>
+                            <li><span class="icon">&#10003;</span> Unlimited document scans</li>
+                            <li><span class="icon">&#10003;</span> AI-powered prioritization</li>
+                            <li><span class="icon">&#10003;</span> Priority support</li>
+                        </ul>
+                        <a href="#download" class="pricing-btn primary">Unlock GrievePath Pro</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA -->
+        <section class="final-cta" id="download">
+            <div class="container">
+                <div class="final-cta-card fade-up">
+                    <h2>You don't have to figure<br>this out alone</h2>
+                    <p>Download GrievePath today and let us walk beside you — one gentle step at a time.</p>
+                    <a href="https://apps.apple.com" class="btn-primary" style="display:inline-flex">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        Download on the App Store
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <a href="#" class="nav-logo">
+                            <div class="nav-logo-icon">&#x1F54A;&#xFE0F;</div>
+                            <span class="nav-logo-text">GrievePath</span>
+                        </a>
+                        <p>Gentle guidance through life's hardest chapter. Built with compassion, designed with care.</p>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Product</h4>
+                        <a href="#features">Features</a>
+                        <a href="#pricing">Pricing</a>
+                        <a href="#download">Download</a>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Legal</h4>
+                        <a href="/privacy">Privacy Policy</a>
+                        <a href="/terms">Terms of Use</a>
+                        <a href="mailto:support@grievepath.com">Contact</a>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Resources</h4>
+                        <a href="#">Grief Support Guide</a>
+                        <a href="#">FAQ</a>
+                        <a href="#">Blog</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <span>&copy; 2026 GrievePath. All rights reserved.</span>
+                    <span>Made with quiet care.</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- p5.js: Gentle Dissolution — Living Breathing Background       -->
+    <!-- 4-4-6 breathing cycle · gold→teal→purple→ghost color journey  -->
+    <!-- Scroll-reactive center · Particles born from warmth           -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <script>
+        let souls = [];
+        let bgGfx;
+        let gTime = 0;
+        let bPhase = 0;
+        let cx, cy;
+        let attPts = [];
+        const SOUL_COUNT = 800;
+        const SEED = 4446;
+
+        let scrollY_c = 0;
+        window.addEventListener('scroll', () => { scrollY_c = window.scrollY; }, { passive: true });
+
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('p5-bg');
+            pixelDensity(1);
+
+            randomSeed(SEED);
+            noiseSeed(SEED);
+
+            cx = width / 2;
+            cy = height / 2;
+
+            bgGfx = createGraphics(width, height);
+            bgGfx.background(8, 10, 15);
+
+            for (let i = 0; i < SOUL_COUNT; i++) {
+                souls.push(new BGSoul(true, cy));
+            }
+
+            for (let i = 0; i < 4; i++) {
+                attPts.push({
+                    x: random(width * 0.15, width * 0.85),
+                    y: random(height * 0.15, height * 0.85),
+                    str: random(0.3, 0.8),
+                    ph: random(TWO_PI),
+                    freq: random(0.004, 0.01)
+                });
+            }
+        }
+
+        function draw() {
+            gTime += 0.016;
+
+            // 4-4-6 breathing cycle
+            let cycle = 14.0;
+            bPhase = gTime % cycle;
+            let bVal;
+            if (bPhase < 4.0) {
+                let t = bPhase / 4.0;
+                bVal = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+            } else if (bPhase < 8.0) {
+                bVal = 1.0;
+            } else {
+                let t = (bPhase - 8.0) / 6.0;
+                bVal = 1.0 - (t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2);
+            }
+
+            // Scroll-reactive vertical center
+            let docH = document.body.scrollHeight || 1;
+            let normScroll = (scrollY_c + windowHeight / 2) / docH;
+            let dynCY = height * 0.3 + normScroll * height * 0.4;
+
+            // Ghost-trail fade
+            bgGfx.noStroke();
+            bgGfx.fill(8, 10, 15, 14);
+            bgGfx.rect(0, 0, width, height);
+
+            for (let i = souls.length - 1; i >= 0; i--) {
+                let s = souls[i];
+                s.update(bVal, dynCY);
+                s.display(bgGfx);
+                if (s.isDead()) {
+                    if (random() < 0.06) {
+                        souls[i] = new BGSoul(false, dynCY);
+                    }
+                }
+            }
+
+            while (souls.length < SOUL_COUNT) {
+                souls.push(new BGSoul(false, dynCY));
+            }
+
+            image(bgGfx, 0, 0);
+
+            // Center ember glow
+            let glowA = map(bVal, 0, 1, 8, 22);
+            let glowS = map(bVal, 0, 1, 80, 140);
+            noStroke();
+            for (let r = glowS; r > 0; r -= 10) {
+                let a = map(r, 0, glowS, glowA, 0);
+                fill(255, 209, 102, a);
+                ellipse(cx, dynCY, r, r);
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            let oldGfx = bgGfx;
+            bgGfx = createGraphics(width, height);
+            bgGfx.background(8, 10, 15);
+            bgGfx.image(oldGfx, 0, 0);
+            cx = width / 2;
+            cy = height / 2;
+        }
+
+        class BGSoul {
+            constructor(initial, cY) {
+                let tY = cY || height / 2;
+                if (initial) {
+                    let a = random(TWO_PI);
+                    let d = random(0, max(width, height) * 0.4);
+                    this.x = cx + cos(a) * d;
+                    this.y = tY + sin(a) * d;
+                } else {
+                    let a = random(TWO_PI);
+                    let d = random(5, 50);
+                    this.x = cx + cos(a) * d;
+                    this.y = tY + sin(a) * d;
+                }
+                this.vx = random(-0.2, 0.2);
+                this.vy = random(-0.2, 0.2);
+                this.life = 1.0;
+                this.decay = random(0.0004, 0.0018);
+                this.nox = random(10000);
+                this.noy = random(10000);
+                this.sz = random(1.0, 3.0);
+                this.spd = random(0.5, 1.3);
+                this.wobble = random(0.4, 1.2);
+            }
+
+            update(bVal, dynCY) {
+                let ns = 0.004;
+                let n1 = noise(this.x * ns + this.nox, this.y * ns + this.noy, gTime * 0.025);
+                let n2 = noise(this.x * ns * 2.3 + 400, this.y * ns * 2.3 + 400, gTime * 0.012);
+                let ang = (n1 * 4.0 + n2 * 2.0) * TWO_PI;
+
+                let fx = cos(ang) * 0.3 * this.spd;
+                let fy = sin(ang) * 0.3 * this.spd;
+
+                let dx = cx - this.x;
+                let dy = dynCY - this.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) + 1;
+                let ndx = dx / dist;
+                let ndy = dy / dist;
+
+                let breathStr = map(bVal, 0, 1, -0.015, 0.04) * 0.45;
+                fx += ndx * breathStr;
+                fy += ndy * breathStr;
+
+                let cStr = 0.1 * (0.5 + 0.5 * bVal);
+                for (let att of attPts) {
+                    let aActive = sin(gTime * att.freq * TWO_PI + att.ph);
+                    if (aActive > 0.2) {
+                        let adx = att.x - this.x;
+                        let ady = att.y - this.y;
+                        let ad = Math.sqrt(adx * adx + ady * ady);
+                        if (ad > 10 && ad < 180) {
+                            let f = cStr * att.str * aActive * (1.0 / (ad * 0.05 + 1));
+                            fx += (adx / ad) * f;
+                            fy += (ady / ad) * f;
+                        }
+                    }
+                }
+
+                let wAng = noise(this.nox + gTime * 0.4, this.noy + gTime * 0.4) * TWO_PI * 2;
+                fx += cos(wAng) * 0.06 * this.wobble;
+                fy += sin(wAng) * 0.06 * this.wobble;
+
+                this.vx = (this.vx + fx) * 0.97;
+                this.vy = (this.vy + fy) * 0.97;
+                let maxV = this.spd * 1.5;
+                let vm = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (vm > maxV) { this.vx *= maxV / vm; this.vy *= maxV / vm; }
+                this.x += this.vx;
+                this.y += this.vy;
+
+                let dFactor = map(constrain(dist, 0, max(width, height) * 0.5), 0, max(width, height) * 0.5, 0.6, 1.8);
+                this.life -= this.decay * dFactor;
+            }
+
+            display(g) {
+                if (this.life <= 0) return;
+
+                let dist = Math.sqrt((this.x - cx) * (this.x - cx) + (this.y - cy) * (this.y - cy));
+                let t = constrain(map(dist, 0, max(width, height) * 0.4, 0, 1), 0, 1);
+
+                let r, gr, b;
+                if (t < 0.33) {
+                    let lt = t / 0.33;
+                    r = lerp(255, 0, lt); gr = lerp(209, 212, lt); b = lerp(102, 170, lt);
+                } else if (t < 0.66) {
+                    let lt = (t - 0.33) / 0.33;
+                    r = lerp(0, 176, lt); gr = lerp(212, 136, lt); b = lerp(170, 255, lt);
+                } else {
+                    let lt = (t - 0.66) / 0.34;
+                    r = lerp(176, 90, lt); gr = lerp(136, 100, lt); b = lerp(255, 120, lt);
+                }
+
+                let alpha = this.life * map(t, 0.8, 1.0, 180, 30);
+                alpha = constrain(alpha, 0, 180);
+
+                g.noStroke();
+                g.fill(r, gr, b, alpha);
+                let sz = this.sz * map(this.life, 0, 1, 0.3, 1.0);
+                g.ellipse(this.x, this.y, sz, sz);
+            }
+
+            isDead() {
+                return this.life <= 0 || this.x < -80 || this.x > width + 80 || this.y < -80 || this.y > height + 80;
+            }
+        }
+
+        // ── UI Scripts ──
+        const fadeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.fade-up').forEach(el => fadeObserver.observe(el));
+
+        const bLabel = document.getElementById('breathingLabel');
+        const bPhases = [
+            { text: 'Breathe In', duration: 4000 },
+            { text: 'Hold', duration: 4000 },
+            { text: 'Breathe Out', duration: 6000 }
+        ];
+        let bIdx = 0;
+        function cycleBr() {
+            bLabel.textContent = bPhases[bIdx].text;
+            setTimeout(() => { bIdx = (bIdx + 1) % bPhases.length; cycleBr(); }, bPhases[bIdx].duration);
+        }
+        cycleBr();
+
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            nav.style.background = window.scrollY > 50 ? 'rgba(8,10,15,0.9)' : 'rgba(8,10,15,0.65)';
+        });
+    </script>
+</body>
+</html>
